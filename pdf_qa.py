@@ -41,6 +41,7 @@ class PdfQA:
     def create_flan_t5_xxl(cls, load_in_8bit=False):
         # Local flan-t5-xxl with 8-bit quantization for inference
         # Wrap it in HF pipeline for use with LangChain
+        model="google/flan-t5-xxl"
         tokenizer = AutoTokenizer.from_pretrained(model)
         return pipeline(
             task="text2text-generation",
@@ -51,6 +52,8 @@ class PdfQA:
         )
     @classmethod
     def create_flan_t5_xl(cls, load_in_8bit=False):
+        model="google/flan-t5-xxl"
+        tokenizer = AutoTokenizer.from_pretrained(model)
         return pipeline(
             task="text2text-generation",
             model="google/flan-t5-xl",
