@@ -1,13 +1,13 @@
-from langchain.document_loaders import PDFPlumberLoader
-from langchain.text_splitter import CharacterTextSplitter, TokenTextSplitter
+from langchain_community.document_loaders import PDFPlumberLoader
+from langchain_community.text_splitter import CharacterTextSplitter, TokenTextSplitter
 from transformers import pipeline
-from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
-from langchain.vectorstores import Chroma
-from langchain.chains import RetrievalQA
-from langchain import HuggingFacePipeline
-from langchain.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.prompts import PromptTemplate
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.vectorstores import Chroma
+from langchain_community.chains import RetrievalQA
+from langchain_community import HuggingFacePipeline
+from langchain_community.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
+from langchain_community.embeddings.openai import OpenAIEmbeddings
 from langchain_community.llms import OpenAI
 from constants import *
 from transformers import AutoTokenizer
