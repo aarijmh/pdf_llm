@@ -35,7 +35,7 @@ def load_llm(llm,load_in_8bit):
     elif llm == LLM_FASTCHAT_T5_XL:
         return PdfQA.create_fastchat_t5_xl(load_in_8bit)
     elif llm == LLM_FLAN_T5_XXL:
-        return PdfQA.create_fastchat_t5_xxl(load_in_8bit)
+        return PdfQA.create_flan_t5_xxl(load_in_8bit)
     elif llm == LLM_FALCON_SMALL:
         return PdfQA.create_falcon_instruct_small(load_in_8bit)
     else:
