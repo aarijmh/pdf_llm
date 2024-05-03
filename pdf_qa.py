@@ -6,9 +6,9 @@ from langchain.chat_models import ChatOpenAI
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain import HuggingFacePipeline
-from langchain_community.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
-from langchain_community.embeddings.openai import OpenAIEmbeddings
-from langchain_community.llms import OpenAI
+from langchain.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.llms import OpenAI
 from constants import *
 from transformers import AutoTokenizer
 import torch
@@ -127,6 +127,30 @@ class PdfQA:
                     }
             )
         return hf_pipeline
+
+    @classmethod
+    def create_meta_llama_3(cls, load_in_8bit=False):
+        model="meta-llama/Meta-Llama-3-8B"
+        tokenizer = AutoTokenizer.from_pretrained(model)
+        return pipeline(
+            task="text2text-generation",
+            model="meta-llama/Meta-Llama-3-8B",
+            tokenizer = tokenizer,
+            max_new_tokens=500,
+            model_kwargs={"device_map": "auto", "load_in_8bit": load_in_8bit, "max_length": 512}
+        )
+    
+    @classmethod
+    def create_mistral(cls, load_in_8bit=False):
+        model="mistralai/Mistral-7B-v0.1"
+        tokenizer = AutoTokenizer.from_pretrained(model)
+        return pipeline(
+            task="text2text-generation",
+            model="mistralai/Mistral-7B-v0.1",
+            tokenizer = tokenizer,
+            max_new_tokens=500,
+            model_kwargs={"device_map": "auto", "load_in_8bit": load_in_8bit, "max_length": 512, "temperature": 0.}
+        )
     
     def init_embeddings(self) -> None:
         # OpenAI ada embeddings API
@@ -172,9 +196,16 @@ class PdfQA:
         elif self.config["llm"] == LLM_FALCON_SMALL:
             if self.llm is None:
                 self.llm = PdfQA.create_falcon_instruct_small(load_in_8bit=load_in_8bit)
+        elif self.config["llm"] == LLM_META_LLAMA_3_8B:
+            if self.llm is None:
+                self.llm = PdfQA.create_meta_llama_3(load_in_8bit=load_in_8bit)
+        elif self.config["llm"] == LLM_MISTRAL_7B:
+            if self.llm is None:
+                self.llm = PdfQA.create_mistral(load_in_8bit=load_in_8bit)
         
         else:
-            raise ValueError("Invalid config")        
+            raise ValueError("Invalid config")    
+            
     def vector_db_pdf(self) -> None:
         """
         creates vector db for the embeddings and persists them or loads a vector db from the persist directory
@@ -189,10 +220,10 @@ class PdfQA:
             loader = PDFPlumberLoader(pdf_path)
             documents = loader.load()
             ## 2. Split the texts
-            text_splitter = CharacterTextSplitter(chunk_size=100, chunk_overlap=0)
+            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
             texts = text_splitter.split_documents(documents)
             # text_splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=10, encoding_name="cl100k_base")  # This the encoding for text-embedding-ada-002
-            text_splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=10)  # This the encoding for text-embedding-ada-002
+            text_splitter = TokenTextSplitter(chunk_size=1000, chunk_overlap=10)  # This the encoding for text-embedding-ada-002
             texts = text_splitter.split_documents(texts)
 
             ## 3. Create Embeddings and add to chroma store
@@ -206,16 +237,16 @@ class PdfQA:
         Creates retrieval qa chain using vectordb as retrivar and LLM to complete the prompt
         """
         ##TODO: Use custom prompt
-        self.retriever = self.vectordb.as_retriever(search_kwargs={"k":3})
+        self.retriever = self.vectordb.as_retriever(search_kwargs={"k":6})
         
         if self.config["llm"] == LLM_OPENAI_GPT35:
           # Use ChatGPT API
           self.qa = RetrievalQA.from_chain_type(llm=OpenAI(model_name=LLM_OPENAI_GPT35, temperature=0.), chain_type="stuff",\
-                                      retriever=self.vectordb.as_retriever(search_kwargs={"k":3}))
+                                      retriever=self.vectordb.as_retriever(search_kwargs={"k":6}),verbose=True)
         else:
             hf_llm = HuggingFacePipeline(pipeline=self.llm,model_id=self.config["llm"])
 
-            self.qa = RetrievalQA.from_chain_type(llm=hf_llm, chain_type="stuff",retriever=self.retriever)
+            self.qa = RetrievalQA.from_chain_type(llm=hf_llm, chain_type="stuff",retriever=self.retriever,verbose=True)
             if self.config["llm"] == LLM_FLAN_T5_SMALL or self.config["llm"] == LLM_FLAN_T5_BASE or self.config["llm"] == LLM_FLAN_T5_LARGE or self.config["llm"] == LLM_FLAN_T5_XXL:
                 question_t5_template = """
                 context: {context}
@@ -234,6 +265,7 @@ class PdfQA:
         """
 
         answer_dict = self.qa({"query":question,})
+        print("Answering question")
         print(answer_dict)
         answer = answer_dict["result"]
         if self.config["llm"] == LLM_FASTCHAT_T5_XL:
@@ -245,3 +277,29 @@ class PdfQA:
         answer = re.sub(r"  ", " ", answer)
         answer = re.sub(r"\n$", "", answer)
         return answer
+
+
+if __name__ == "__main__":
+    print("abcs")
+    pdf_path = "directivesCombined.pdf"
+    loader = PDFPlumberLoader(pdf_path)
+    documents = loader.load()
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    texts = text_splitter.split_documents(documents)
+    text_splitter = TokenTextSplitter(chunk_size=10000, chunk_overlap=10, encoding_name="cl100k_base")  # This the encoding for text-embedding-ada-002
+    texts = text_splitter.split_documents(texts)
+    persist_directory ="./"
+    vectordb = Chroma.from_documents(documents=texts, embedding=PdfQA.create_sbert_mpnet(), persist_directory=persist_directory)
+    
+    hf_llm = HuggingFacePipeline(pipeline=PdfQA.create_flan_t5_base())
+    retriever = vectordb.as_retriever(search_kwargs={"k":4})
+    qa = RetrievalQA.from_chain_type(llm=hf_llm, chain_type="stuff",retriever=retriever)
+    config = {}
+    config["embedding"] = PdfQA.create_sbert_mpnet()
+    config["vectordb"] = vectordb
+    config["llm"] = PdfQA.create_flan_t5_base()
+    config["qa"] = qa
+    config["retriever"] = retriever
+    pdfqa = PdfQA(config)
+    pdfqa.retreival_qa_chain()
+    pdfqa.answer_query("Exemptions for ACCA")

@@ -38,6 +38,10 @@ def load_llm(llm,load_in_8bit):
         return PdfQA.create_flan_t5_xxl(load_in_8bit)
     elif llm == LLM_FALCON_SMALL:
         return PdfQA.create_falcon_instruct_small(load_in_8bit)
+    elif llm == LLM_META_LLAMA_3_8B:
+        return PdfQA.create_meta_llama_3(load_in_8bit)
+    elif llm == LLM_MISTRAL_7B:
+        return PdfQA.create_mistral(load_in_8bit)
     else:
         raise ValueError("Invalid LLM setting")
 
@@ -59,7 +63,7 @@ st.title("PDF Q&A (Self hosted LLMs)")
 
 with st.sidebar:
     emb = st.radio("**Select Embedding Model**", [EMB_INSTRUCTOR_XL, EMB_SBERT_MPNET_BASE,EMB_SBERT_MINILM],index=1)
-    llm = st.radio("**Select LLM Model**", [LLM_FASTCHAT_T5_XL, LLM_FLAN_T5_SMALL,LLM_FLAN_T5_BASE,LLM_FLAN_T5_LARGE,LLM_FLAN_T5_XL,LLM_FLAN_T5_XXL,LLM_FALCON_SMALL],index=2)
+    llm = st.radio("**Select LLM Model**", [LLM_FASTCHAT_T5_XL, LLM_FLAN_T5_SMALL,LLM_FLAN_T5_BASE,LLM_FLAN_T5_LARGE,LLM_FLAN_T5_XL,LLM_FLAN_T5_XXL,LLM_FALCON_SMALL,LLM_META_LLAMA_3_8B,LLM_MISTRAL_7B],index=2)
     load_in_8bit = st.radio("**Load 8 bit**", [True, False],index=1)
     pdf_file = st.file_uploader("**Upload PDF**", type="pdf")
 

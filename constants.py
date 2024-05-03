@@ -13,3 +13,7 @@ LLM_FLAN_T5_SMALL = "google/flan-t5-small"
 LLM_FLAN_T5_BASE = "google/flan-t5-base"
 LLM_FLAN_T5_LARGE = "google/flan-t5-large"
 LLM_FALCON_SMALL = "tiiuae/falcon-7b-instruct"
+LLM_META_LLAMA_3_8B = "meta-llama/Meta-Llama-3-8B"
+LLM_MISTRAL_7B = "mistralai/Mistral-7B-v0.1"
+
+
